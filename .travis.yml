@@ -1,3 +1,8 @@
+script:
+  - "bundle exec rubocop"
+  - "bundle exec rake neo4j:install[$NEO4J_VERSION] neo4j:start default --trace"
 language: ruby
 rvm:
   - 2.2.2
+env:
+  - NEO4J_VERSION=community-2.2.2
