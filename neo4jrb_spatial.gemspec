@@ -9,9 +9,8 @@ Gem::Specification.new do |spec|
   spec.authors       = ['Chris Grigg']
   spec.email         = ['chris@subvertallmedia.com']
 
-  spec.summary       = 'TODO: Write a short summary, because Rubygems requires one.'
-  spec.description   = 'TODO: Write a longer description or delete this line.'
-  spec.homepage      = "TODO: Put your gem's website or public repo URL here."
+  spec.summary       = 'Provides basic support for Neo4j Spatial with Neo4j.rb.'
+  spec.homepage      = 'https://github.com/neo4jrb/neo4jrb_spatial'
 
   spec.files         = Dir.glob('{bin,lib,config}/**/*') + %w(README.md CHANGELOG.md Gemfile neo4jrb_spatial.gemspec)
   spec.bindir        = 'exe'
