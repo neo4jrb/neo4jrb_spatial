@@ -30,6 +30,11 @@ Optionally:
 
 # Usage
 
+## Add it
+
+```
+gem 'neo4jrb_spatial', '~> 1.0.0'
+```
 
 ## Require it
 
@@ -41,7 +46,7 @@ require 'neo4j/spatial'
 include Neo4j::ActiveNode::Spatial
 ```
 
-## Basics - Neo4j-core
+## Use it with Neo4j-core
 
 ```ruby
 # Create an index
@@ -58,10 +63,9 @@ Neo4j::Session.current.query.start('n = node:restaurants({location})').params(lo
 # => CypherNode 90126 (70333884677220)
 ```
 
-## Basics - Neo4j gem
+## Use it with the Neo4j gem
 
- Neo4j.rb does not support legacy indexes, so a helper method is provided to add nodes. As with normal properties, your lat and lon
- should be explicitly declared.
+ Neo4j.rb does not support legacy indexes, so a helper method is provided to add nodes. As with normal properties, your lat and lon should be explicitly declared.
  
 ### Automatic index addition
 
