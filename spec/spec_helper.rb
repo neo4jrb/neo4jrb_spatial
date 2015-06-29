@@ -1,6 +1,7 @@
 $LOAD_PATH.unshift File.expand_path('../../lib', __FILE__)
 require 'rspec'
 require 'neo4j-core'
+require 'neo4j'
 require 'neo4jrb_spatial'
 
 def server_url

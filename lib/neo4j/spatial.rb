@@ -110,9 +110,8 @@ module Neo4j::Server
     end
 
     def get_id(id)
+      return id.neo_id if id.respond_to?(:neo_id)
       case id
-      when Neo4j::Server::CypherNode
-        id.neo_id
       when Array
         get_id(id.first)
       when Hash
