@@ -43,9 +43,6 @@ include Neo4j::ActiveNode::Spatial
 
 ## Basics - Neo4j-core
 
-**NOTE**
-At the moment, this gem might not work without the Neo4j gem also included. Will be fixed soon.
-
 ```ruby
 # Create an index
 Neo4j::Session.current.create_spatial_index('restaurants')

@@ -1,6 +1,9 @@
 script:
+  - "bundle exec rake neo4j:install[$NEO4J_VERSION]"
+  - "wget https://github.com/neo4j-contrib/m2/blob/master/releases/org/neo4j/neo4j-spatial/0.14-neo4j-2.2.0/neo4j-spatial-0.14-neo4j-2.2.0-server-plugin.zip?raw=true"
+  - "unzip neo4j-spatial-0.14-neo4j-2.2.0-server-plugin.zip?raw=true -d ./db/neo4j/development/plugins"
+  - "bundle exec rake neo4j:start default --trace"
   - "bundle exec rubocop"
-  - "bundle exec rake neo4j:install[$NEO4J_VERSION] neo4j:start default --trace"
 language: ruby
 rvm:
   - 2.2.2
