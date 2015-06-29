@@ -65,23 +65,44 @@ Neo4j::Session.current.query.start('n = node:restaurants({location})').params(lo
 
 ## Use it with the Neo4j gem
 
- Neo4j.rb does not support legacy indexes, so a helper method is provided to add nodes. As with normal properties, your lat and lon should be explicitly declared.
+ Neo4j.rb does not support legacy indexes, so adding nodes to spatial indexes needs to happen separately from node creation. This is complicated by the fact that Neo4j.rb creates all nodes in transactions, so `after_create` callbacks won't work; instead, add your node to the index once you've confirmed it has been created.
  
-### Automatic index addition
-
-At the moment, automatic index addition is not implemented.
+ Start by adding `lat` and `lon` properties to your model. You can also add a `spatial_index` to save yourself some time later.
+ 
+ ```
+ class Restaurant
+   include Neo4j::ActiveNode
+   include Neo4j::ActiveNode::Spatial
+   
+   # This is optional but might make things easier for you later
+   spatial_index 'restaurants'
+   
+   property :name
+   property :lat
+   property :lon
+ end
+ 
+ # Create it
+ pizza_hut = Restaurant.create(name: 'Pizza Hut', lat: 60.1, lon: 15.1)
+ 
+ # When called without an argument, it will use the value set through `spatial_index` in the model
+ pizza_hut.add_to_spatial_index
+ 
+ # Alternatively, to add it to a different index, just give it that name
+ pizza_hut.add_to_spatial_index('fake_pizza_places')
+ ```
 
 ### Manual index addition
 
-All of the Neo4j-core spatial methods accept ActiveNode-including nodes, so you can use them as arguments for all defined methods as you would
-Neo4j::Server::CypherNode instances.
+All of the Neo4j-core spatial methods accept ActiveNode-including nodes, so you can use them as arguments for all defined methods as you would Neo4j::Server::CypherNode instances.
 
-Additionally, you can call the `add_to_spatial_index` instance method on any node to add it to its model's defined index.
+```ruby
+Neo4j::Session.current.add_node_to_spatial_index('fake_pizza_places', pizza_hut)
+```
 
 ### Spatial queries
 
-No helpers are provided to query against the REST API -- you'll need to use the ones provided for Neo4j-core; however, a class method is provided 
-to make Cypher queries easier: `spatial_match`.
+No helpers are provided to query against the REST API -- you'll need to use the ones provided for Neo4j-core; however, a class method is provided to make Cypher queries easier: `spatial_match`.
 
 ```
 # Use the index defined on the model as demonstrated above
@@ -97,7 +118,7 @@ It then drops you back into a QueryProxy in the context of the class. If you had
  Restauarant.all.spatial_match(:r, 'withinDistance:[41.99,-87.67,10.0]').employees.where(age: 30)
  ```
  
- Alternatively, if you did no define `spatial_index` on your model, you can feed a third argument: the index to use for the query.
+If you did no define `spatial_index` on your model or what to query against something other than the model's default, you can feed a third argument: the index to use for the query.
 
 ## Additional Resources
 
