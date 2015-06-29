@@ -1,5 +1,4 @@
 require 'spec_helper'
-require 'pry'
 
 describe Neo4j::Server::Spatial do
   let(:neo) { Neo4j::Session.current }
