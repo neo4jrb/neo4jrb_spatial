@@ -8,6 +8,10 @@ It is more or less a Neo4j.rb-flavored implementation of [Max De Marzi](https://
 
 For support, open an issue or say hello through [Gitter](https://gitter.im/neo4jrb/neo4j).
 
+## Quick TLDR
+
+* Make sure to install Compatible version of [Neo4j Spatial](https://github.com/neo4j-contrib/spatial#using-the-neo4j-spatial-server-plugin)
+
 ## What it provides
 
 * Basic index and layer management
