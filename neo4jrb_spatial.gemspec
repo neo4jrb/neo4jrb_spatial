@@ -24,4 +24,5 @@ Gem::Specification.new do |spec|
 
   spec.add_dependency 'neo4j', '>= 5.0.1'
   spec.add_dependency 'neo4j-core', '>= 5.0.1'
+  spec.add_dependency 'neo4j-rake_tasks', '~> 0.3'
 end
