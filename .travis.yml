@@ -7,6 +7,8 @@ script:
   - "bundle exec rake neo4j:start default --trace"
   - "bundle exec rubocop"
 language: ruby
+jdk:
+  - oraclejdk8
 rvm:
   - 2.0.0
   - 2.2.4
