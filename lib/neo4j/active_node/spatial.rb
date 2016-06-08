@@ -26,17 +26,17 @@ module Neo4j
 
         # private :create_index_callback
       end
+    end
 
-      class Query
-        class QueryProxy
-          def spatial_match(var, params_string, spatial_index = nil)
-            index = model.spatial_index_name || spatial_index
-            fail 'Cannot query without index. Set index in model or as third argument.' unless index
-            Neo4j::Session.current.query
-              .start("#{var} = node:#{index}({spatial_params})")
-              .proxy_as(model, var)
-              .params(spatial_params: params_string)
-          end
+    module Query
+      class QueryProxy
+        def spatial_match(var, params_string, spatial_index = nil)
+          index = model.spatial_index_name || spatial_index
+          fail 'Cannot query without index. Set index in model or as third argument.' unless index
+          Neo4j::Session.current.query
+            .start("#{var} = node:#{index}({spatial_params})")
+            .proxy_as(model, var)
+            .params(spatial_params: params_string)
         end
       end
     end
