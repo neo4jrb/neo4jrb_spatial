@@ -2,7 +2,7 @@ require 'bundler/gem_tasks'
 require 'neo4j/rake_tasks'
 
 task 'spec' do
-  system('rspec spec')
+  exit system('rspec spec')
 end
 
 task default: ['spec']

@@ -2,6 +2,12 @@
 
 Provides support for Neo4j Spatial to Neo4j.rb 5+.
 
+## Code Status
+
+[![Build Status](https://secure.travis-ci.org/neo4jrb/neo4jrb_spatial.png?branch=master)](http://travis-ci.org/neo4jrb/neo4jrb_spatial)
+
+## Introduction
+
 It is more or less a Neo4j.rb-flavored implementation of [Max De Marzi](https://github.com/maxdemarzi)'s
 [code](https://github.com/maxdemarzi/neography/blob/46be2bb3c66aea14e707b1e6f82937e65f686ccc/lib/neography/rest/spatial.rb) from
 [Neography](https://github.com/maxdemarzi/neography).
@@ -66,28 +72,28 @@ Neo4j::Session.current.query.start('n = node:restaurants({location})').params(lo
 ## Use it with the Neo4j gem
 
  Neo4j.rb does not support legacy indexes, so adding nodes to spatial indexes needs to happen separately from node creation. This is complicated by the fact that Neo4j.rb creates all nodes in transactions, so `after_create` callbacks won't work; instead, add your node to the index once you've confirmed it has been created.
- 
+
  Start by adding `lat` and `lon` properties to your model. You can also add a `spatial_index` to save yourself some time later.
- 
+
  ```
  class Restaurant
    include Neo4j::ActiveNode
    include Neo4j::ActiveNode::Spatial
-   
+
    # This is optional but might make things easier for you later
    spatial_index 'restaurants'
-   
+
    property :name
    property :lat
    property :lon
  end
- 
+
  # Create it
  pizza_hut = Restaurant.create(name: 'Pizza Hut', lat: 60.1, lon: 15.1)
- 
+
  # When called without an argument, it will use the value set through `spatial_index` in the model
  pizza_hut.add_to_spatial_index
- 
+
  # Alternatively, to add it to a different index, just give it that name
  pizza_hut.add_to_spatial_index('fake_pizza_places')
  ```
@@ -112,12 +118,12 @@ Restaurant.all.spatial_match(:r, params_string)
 ```
 
 It then drops you back into a QueryProxy in the context of the class. If you had an `employees` association defined in your model:
- 
+
  ```
  # Find all restaurants within the specified distance, then find their employees who are age 30
  Restauarant.all.spatial_match(:r, 'withinDistance:[41.99,-87.67,10.0]').employees.where(age: 30)
  ```
- 
+
 If you did no define `spatial_index` on your model or what to query against something other than the model's default, you can feed a third argument: the index to use for the query.
 
 ## Additional Resources
@@ -129,4 +135,4 @@ mostly works for an idea of the basics, just replace Neography-specific commands
 
 ## Contributions
 
-Pull requests and maintanence help would be swell. In addition to being fully tested, please ensure rubocop passes by running `rubocop` from the CLI. 
+Pull requests and maintanence help would be swell. In addition to being fully tested, please ensure rubocop passes by running `rubocop` from the CLI.

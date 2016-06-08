@@ -1,11 +1,15 @@
+install:
+  - "bundle exec rake neo4j:install[community-$NEO4J_VERSION]"
+  - "wget https://github.com/neo4j-contrib/m2/blob/master/releases/org/neo4j/neo4j-spatial/$NEO4J_SPATIAL_VERSION-neo4j-$NEO4J_VERSION/neo4j-spatial-$NEO4J_SPATIAL_VERSION-neo4j-$NEO4J_VERSION-server-plugin.zip?raw=true"
+  - "unzip neo4j-spatial-$NEO4J_SPATIAL_VERSION-neo4j-$NEO4J_VERSION-server-plugin.zip?raw=true -d ./db/neo4j/development/plugins"
 script:
-  - "bundle exec rake neo4j:install[$NEO4J_VERSION]"
-  - "wget https://github.com/neo4j-contrib/m2/blob/master/releases/org/neo4j/neo4j-spatial/0.14-neo4j-2.2.0/neo4j-spatial-0.14-neo4j-2.2.0-server-plugin.zip?raw=true"
-  - "unzip neo4j-spatial-0.14-neo4j-2.2.0-server-plugin.zip?raw=true -d ./db/neo4j/development/plugins"
   - "bundle exec rake neo4j:start default --trace"
   - "bundle exec rubocop"
 language: ruby
 rvm:
-  - 2.2.2
+  - 2.0.0
+  - 2.2.4
+  - 2.3.1
 env:
-  - NEO4J_VERSION=community-2.2.2
+  - NEO4J_VERSION=2.2.2
+  - NEO4J_SPATIAL_VERSION=0.14
