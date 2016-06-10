@@ -1,6 +1,6 @@
 install:
   - "gem install bundler -v 1.9.5"
-  - "bundle install --jobs=3 --retry=3"
+  - "travis_retry bundle install --jobs=3 --retry=3"
   - "bundle exec rake neo4j:install[community-$NEO4J_VERSION]"
   - "echo 'dbms.memory.pagecache.size=1g' >> ./db/neo4j/development/conf/neo4j.conf"
   - "echo 'dbms.memory.heap.max_size=1000' >> ./db/neo4j/development/conf/neo4j-wrapper.conf"
@@ -21,6 +21,6 @@ rvm:
   - 2.2.4
   - 2.3.1
 env:
-  - NEO4J_VERSION=2.2.2 NEO4J_SPATIAL_VERSION=0.14
-  - NEO4J_VERSION=2.3.3 NEO4J_SPATIAL_VERSION=0.15
-  - NEO4J_VERSION=3.0.1 NEO4J_SPATIAL_VERSION=0.16
+  - NEO4J_VERSION=2.2.2
+  - NEO4J_VERSION=2.3.3
+  - NEO4J_VERSION=3.0.1
