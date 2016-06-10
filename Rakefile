@@ -20,7 +20,7 @@ namespace :neo4j_spatial do
   def matching_version(version)
     uri = 'https://raw.githubusercontent.com/neo4j-contrib/m2/master/releases/org/neo4j/neo4j-spatial/maven-metadata.xml'
     versions = Net::HTTP.get_response(URI.parse(uri)).body
-    versions = versions.scan(%r{<version>([a-z\-0-9\.]+)</version>})
+    versions = versions.scan(/<version>([a-z\-0-9\.]+)<\/version>/)
     versions.map! { |e| e.first.split('-neo4j-') }
     versions.select { |e| match_version?(version, e.last) }.last
   end
