@@ -94,11 +94,11 @@ describe Neo4j::Server::Spatial do
   describe 'find geometries in a bounding box' do
     it 'can find a geometry in a bounding box' do
       properties = {name: "Max's Restaurant", lat: 41.8819, lon: 87.6278}
-      node = neo.find_geometries_in_bbox('restaurants', 87.5, 87.7, 41.7, 41.9)
-      expect(node).not_to be_empty
-      expect(node.first[:data][:lat]).to eq(properties[:lat])
-      expect(node.first[:data][:lon]).to eq(properties[:lon])
-      expect(node.first[:data][:name]).to eq("Max's Restaurant")
+      nodes = neo.find_geometries_in_bbox('restaurants', 87.5, 87.7, 41.7, 41.9)
+      expect(nodes).not_to be_empty
+      result = nodes.find { |node| node[:data][:name] == "Max's Restaurant" }
+      expect(result[:data][:lat]).to eq(properties[:lat])
+      expect(result[:data][:lon]).to eq(properties[:lon])
     end
 
     it 'can find a geometry in a bounding box using cypher' do
