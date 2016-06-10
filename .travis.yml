@@ -8,9 +8,11 @@ install:
   - "bundle exec rake neo4j_spatial:install"
   - "bundle exec rake neo4j:start --trace"
   - "sleep 10"
+  - "./db/neo4j/development/bin/neo4j console"
 sudo: false
+cache: bundler
 script:
-  - "bundle exec rake default --trace"
+  - "travis_retry bundle exec rake default --trace"
   - "bundle exec rubocop"
 language: ruby
 jdk:
