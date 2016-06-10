@@ -6,7 +6,7 @@ install:
   - "echo 'dbms.memory.heap.max_size=1000' >> ./db/neo4j/development/conf/neo4j-wrapper.conf"
   - "echo 'dbms.memory.heap.initial_size=1000' >> ./db/neo4j/development/conf/neo4j-wrapper.conf"
   - "bundle exec rake neo4j_spatial:install"
-  - "./db/neo4j/development/bin/neo4j console"
+  - "bundle exec rake neo4j:start --trace"
   - "sleep 10"
 sudo: false
 cache: bundler
