@@ -2,6 +2,7 @@ describe 'ActiveNode integration', type: :active_model do
   let(:node) { Restaurant.create(name: "Chris's Restaurant", lat: 60.1, lon: 15.2) }
   let(:outside_node) { Restaurant.create(name: 'Lily Thai', lat: 59.0, lon: 14.9) }
   before do
+    Neo4j::ActiveBase.current_session.create_spatial_index('restaurants')
     stub_active_node_class('Restaurant') do
       include Neo4j::ActiveNode::Spatial
       spatial_index 'restaurants'
