@@ -5,6 +5,12 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased][unreleased]
 
+### Fixed
+
+- Compatibility with `neo4j-core ~> 6.1.4` (see #13)
+- Some module nesting issues (see #10)
+- Travis setup (see #13)
+
 ## [1.1.0] - 2015-10-15
 
 ### Fixed
