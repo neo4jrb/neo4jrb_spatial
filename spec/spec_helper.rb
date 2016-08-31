@@ -15,6 +15,73 @@ def clear_model_memory_caches
   Neo4j::ActiveNode::Labels.clear_wrapped_models
 end
 
+module ActiveNodeRelStubHelpers
+  def stub_active_node_class(class_name, with_constraint = true, &block)
+    stub_const class_name, active_node_class(class_name, with_constraint, &block)
+  end
+
+  def stub_active_rel_class(class_name, &block)
+    stub_const class_name, active_rel_class(class_name, &block)
+  end
+
+  def stub_named_class(class_name, superclass = nil, &block)
+    stub_const class_name, named_class(class_name, superclass, &block)
+    Neo4j::ModelSchema.reload_models_data!
+  end
+
+  def active_node_class(class_name, with_constraint = true, &block)
+    named_class(class_name) do
+      include Neo4j::ActiveNode
+
+      module_eval(&block) if block
+    end.tap { |model| create_id_property_constraint(model, with_constraint) }
+  end
+
+  def create_id_property_constraint(model, with_constraint)
+    return if model.id_property_info[:type][:constraint] == false || !with_constraint
+
+    create_constraint(model.mapped_label_name, model.id_property_name, type: :unique)
+  end
+
+  def active_rel_class(class_name, &block)
+    named_class(class_name) do
+      include Neo4j::ActiveRel
+
+      module_eval(&block) if block
+    end
+  end
+
+  def named_class(class_name, superclass = nil, &block)
+    Class.new(superclass || Object) do
+      @class_name = class_name
+      class << self
+        attr_reader :class_name
+        alias_method :name, :class_name
+        def to_s
+          name
+        end
+      end
+
+      module_eval(&block) if block
+    end
+  end
+
+  def id_property_value(o)
+    o.send o.class.id_property_name
+  end
+
+  def create_constraint(label_name, property, options = {})
+    Neo4j::ActiveBase.label_object(label_name).create_constraint(property, options)
+    Neo4j::ModelSchema.reload_models_data!
+  end
+
+  def create_index(label_name, property, options = {})
+    Neo4j::ActiveBase.label_object(label_name).create_index(property, options)
+    Neo4j::ModelSchema.reload_models_data!
+  end
+end
+
+
 TEST_SESSION_MODE = RUBY_PLATFORM == 'java' ? :embedded : :http
 
 session_adaptor = case TEST_SESSION_MODE
@@ -47,4 +114,6 @@ RSpec.configure do |c|
   c.after(:each) do
     clear_model_memory_caches
   end
+
+  c.include ActiveNodeRelStubHelpers, type: :active_model
 end
