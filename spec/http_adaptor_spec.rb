@@ -1,7 +1,7 @@
 require 'spec_helper'
 
-describe Neo4j::Server::Spatial do
-  let(:neo) { Neo4j::Session.current }
+describe Neo4j::Core::Spatial::HTTPAdaptor do
+  let(:neo) { Neo4j::ActiveBase.current_session }
 
   describe 'find the spatial plugin' do
     it 'can get a description of the spatial plugin' do
@@ -79,7 +79,8 @@ describe Neo4j::Server::Spatial do
   describe 'add a node to a layer' do
     it 'can add a node to a simple point layer' do
       properties = {name: "Max's Restaurant", lat: 41.8819, lon: 87.6278}
-      node = Neo4j::Node.create(properties, :Restaurant)
+      query_obj = Neo4j::Core::Query.new.create(n: {Restaurant: properties}).return(:n)
+      node = neo.query(query_obj).first[:n]
       expect(node).not_to be_nil
       added = neo.add_node_to_layer('restaurants', node)
       expect(added.first[:data][:lat]).to eq(properties[:lat])
@@ -104,9 +105,11 @@ describe Neo4j::Server::Spatial do
     it 'can find a geometry in a bounding box using cypher' do
       properties = {lat: 60.1, lon: 15.2}
       neo.create_spatial_index('geombbcypher', 'point', 'lat', 'lon')
-      node = Neo4j::Node.create(properties, :dummy)
+      query_obj = Neo4j::Core::Query.new.create(n: {dummy: properties}).return(:n)
+      node = neo.query(query_obj).first[:n]
       neo.add_node_to_spatial_index('geombbcypher', node)
-      existing_node = neo.query.start("node = node:geombbcypher('bbox:[15.0,15.3,60.0,60.2]')").pluck(:node).first
+      query_obj = Neo4j::Core::Query.new.start("node = node:geombbcypher('bbox:[15.0,15.3,60.0,60.2]')").return(:node)
+      existing_node = neo.query(query_obj).first[:node]
       expect(existing_node).not_to be_nil
       expect(existing_node.props[:lat]).to eq(properties[:lat])
       expect(existing_node.props[:lon]).to eq(properties[:lon])
@@ -115,9 +118,11 @@ describe Neo4j::Server::Spatial do
     it 'can find a geometry in a bounding box using cypher two' do
       properties = {lat: 60.1, lon: 15.2}
       neo.create_spatial_index('geombbcypher2', 'point', 'lat', 'lon')
-      node = Neo4j::Node.create(properties)
+      query_obj = Neo4j::Core::Query.new.create(n: {[] => properties}).return(:n)
+      node = neo.query(query_obj).first[:n]
       neo.add_node_to_spatial_index('geombbcypher2', node)
-      existing_node = node.query.start("node = node:geombbcypher2('bbox:[15.0,15.3,60.0,60.2]')").pluck(:node).first
+      query_obj = Neo4j::Core::Query.new.start("node = node:geombbcypher2('bbox:[15.0,15.3,60.0,60.2]')").return(:node)
+      existing_node = neo.query(query_obj).first[:node]
       expect(existing_node).not_to be_nil
       expect(existing_node.props[:lat]).to eq(properties[:lat])
       expect(existing_node.props[:lon]).to eq(properties[:lon])
@@ -137,9 +142,11 @@ describe Neo4j::Server::Spatial do
     it 'can find a geometry within distance using cypher' do
       properties = {lat: 60.1, lon: 15.2}
       neo.create_spatial_index('geowdcypher', 'point', 'lat', 'lon')
-      node = Neo4j::Node.create(properties)
+      query_obj = Neo4j::Core::Query.new.create(n: {[] => properties}).return(:n)
+      node = neo.query(query_obj).first[:n]
       neo.add_node_to_spatial_index('geowdcypher', node)
-      existing_node = neo.query.start('n = node:geowdcypher({bbox})').params(bbox: 'withinDistance:[60.0,15.0,100.0]').pluck(:n).first
+      query_obj = Neo4j::Core::Query.new.start('n = node:geowdcypher({bbox})').params(bbox: 'withinDistance:[60.0,15.0,100.0]').return(:n)
+      existing_node = neo.query(query_obj).first[:n]
       expect(existing_node).not_to be_nil
       expect(existing_node.props[:lat]).to eq(properties[:lat])
       expect(existing_node.props[:lon]).to eq(properties[:lon])
@@ -148,44 +155,14 @@ describe Neo4j::Server::Spatial do
     it 'can find a geometry within distance using cypher 2'  do
       properties = {lat: 60.1, lon: 15.2}
       neo.create_spatial_index('geowdcypher2', 'point', 'lat', 'lon')
-      node = Neo4j::Node.create(properties)
+      query_obj = Neo4j::Core::Query.new.create(n: {[] => properties}).return(:n)
+      node = neo.query(query_obj).first[:n]
       neo.add_node_to_spatial_index('geowdcypher2', node)
-      existing_node = neo.query.start('n = node:geowdcypher2({bbox})').params(bbox: 'withinDistance:[60.0,15.0,100.0]').pluck(:n).first
+      query_obj = Neo4j::Core::Query.new.start('n = node:geowdcypher2({bbox})').params(bbox: 'withinDistance:[60.0,15.0,100.0]').return(:n)
+      existing_node = neo.query(query_obj).first[:n]
       expect(existing_node).not_to be_nil
       expect(existing_node.props[:lat]).to eq(properties[:lat])
       expect(existing_node.props[:lon]).to eq(properties[:lon])
-    end
-  end
-
-  describe 'ActiveNode integration' do
-    let(:node) { Restaurant.create(name: "Chris's Restauarant", lat: 60.1, lon: 15.2) }
-    let(:outside_node) { Restaurant.create(name: 'Lily Thai', lat: 59.0, lon: 14.9) }
-    before do
-      stub_const('Restaurant', Class.new do
-        include Neo4j::ActiveNode
-        include Neo4j::ActiveNode::Spatial
-        spatial_index 'restaurants'
-        property :name
-        property :lat
-        property :lon
-      end)
-
-      Restaurant.delete_all
-      [node, outside_node].each(&:add_to_spatial_index)
-    end
-
-    let(:match) { Restaurant.all.spatial_match(:r, 'withinDistance:[60.0,15.0,100.0]') }
-
-    it 'is a QueryProxy' do
-      expect(match).to respond_to(:to_cypher)
-    end
-
-    it 'matches to the node in the spatial index' do
-      expect(match.first).to eq node
-    end
-
-    it 'only returns expected nodes' do
-      expect(match.to_a).not_to include(outside_node)
     end
   end
 end

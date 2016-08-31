@@ -4,3 +4,5 @@ source 'https://rubygems.org'
 gemspec
 
 gem 'activesupport', '~> 4.2' if RUBY_VERSION.to_f < 2.2
+
+gem 'neo4j', '~> 8.0.0.alpha.2'
