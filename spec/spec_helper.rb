@@ -30,11 +30,12 @@ module ActiveNodeRelStubHelpers
   end
 
   def active_node_class(class_name, with_constraint = true, &block)
-    named_class(class_name) do
+    klass = named_class(class_name) do
       include Neo4j::ActiveNode
 
       module_eval(&block) if block
-    end.tap { |model| create_id_property_constraint(model, with_constraint) }
+    end
+    klass.tap { |model| create_id_property_constraint(model, with_constraint) }
   end
 
   def create_id_property_constraint(model, with_constraint)
