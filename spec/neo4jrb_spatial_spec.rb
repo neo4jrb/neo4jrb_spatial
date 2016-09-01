@@ -52,6 +52,10 @@ describe Neo4j::Server::Spatial do
       expect(index[:lat]).to eq('lat')
       expect(index[:lon]).to eq('lon')
     end
+
+    it 'fails when passing an invalid name' do
+      expect { neo.create_spatial_index('') }.to raise_error Neo4jrbSpatial::RequestError, /not be empty/
+    end
   end
 
   describe 'add geometry to spatial layer' do
@@ -122,6 +126,10 @@ describe Neo4j::Server::Spatial do
       expect(existing_node.props[:lat]).to eq(properties[:lat])
       expect(existing_node.props[:lon]).to eq(properties[:lon])
     end
+
+    it 'fails when passing an invalid node' do
+      expect { neo.add_node_to_spatial_index('geombbcypher', nil) }.to raise_error Neo4jrbSpatial::RequestError, /InvalidFormat/
+    end
   end
 
   describe 'find geometries within distance' do
@@ -145,7 +153,7 @@ describe Neo4j::Server::Spatial do
       expect(existing_node.props[:lon]).to eq(properties[:lon])
     end
 
-    it 'can find a geometry within distance using cypher 2'  do
+    it 'can find a geometry within distance using cypher 2' do
       properties = {lat: 60.1, lon: 15.2}
       neo.create_spatial_index('geowdcypher2', 'point', 'lat', 'lon')
       node = Neo4j::Node.create(properties)
