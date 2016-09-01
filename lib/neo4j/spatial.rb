@@ -111,13 +111,15 @@ module Neo4j
       end
 
       def parse_response!(response)
-        if response.is_a?(Hash) && response[:errors] && error = response[:errors][0]
-          fail Neo4jrbSpatial::RequestError, <<-ERROR
-  #{ANSI::CYAN}#{error[:code]}#{ANSI::CLEAR}: #{error[:message]}
-  #{error[:stack_trace]}
-ERROR
-        end
+        request_error!(response[:exception], response[:message], response[:stack_trace]) if response.is_a?(Hash) && response[:exception]
         response
+      end
+
+      def request_error!(code, message, stack_trace)
+        fail Neo4jrbSpatial::RequestError, <<-ERROR
+  #{ANSI::CYAN}#{code}#{ANSI::CLEAR}: #{message}
+  #{stack_trace}
+ERROR
       end
 
       def get_id(id)

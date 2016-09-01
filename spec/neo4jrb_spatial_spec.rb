@@ -128,7 +128,7 @@ describe Neo4j::Server::Spatial do
     end
 
     it 'fails when passing an invalid node' do
-      expect { neo.add_node_to_spatial_index('geombbcypher', nil) }.to raise_error Neo4jrbSpatial::RequestError, /InvalidFormat/
+      expect { neo.add_node_to_spatial_index('geombbcypher', nil) }.to raise_error Neo4jrbSpatial::RequestError, /For input string/
     end
   end
 
