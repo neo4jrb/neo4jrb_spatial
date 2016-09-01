@@ -21,13 +21,19 @@ rvm:
   - 2.3.1
   - jruby-9.0.5.0
 env:
-  - NEO4J_VERSION=2.2.2
-  - NEO4J_VERSION=2.3.3
-  - NEO4J_VERSION=3.0.1
+  - NEO4J_VERSION=3.0.3
 matrix:
   include:
     - rvm: 2.3.1
       jdk:
-      before_script:
+      install:
       script: "bundle exec rubocop"
       env: "RUBOCOP=true"
+
+    # Older versions of Neo4j with latest version of Ruby
+    - rvm: 2.3.1
+      env: NEO4J_VERSION=2.3.6
+    - rvm: 2.3.1
+      env: NEO4J_VERSION=2.2.10
+    - rvm: 2.3.1
+      env: NEO4J_VERSION=2.1.8
