@@ -5,6 +5,8 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased][unreleased]
 
+## [1.2.0] - 2016-09-26
+
 ### Fixed
 
 - Compatibility with `neo4j-core ~> 6.1.4` (see #13)
