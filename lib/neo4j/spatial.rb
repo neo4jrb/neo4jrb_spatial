@@ -6,7 +6,7 @@ module Neo4j
       end
 
       def spatial_plugin
-        Neo4j::Session.current.connection.get('/db/data/ext/SpatialPlugin').body
+        parse_response! Neo4j::Session.current.connection.get('/db/data/ext/SpatialPlugin').body
       end
 
       def add_point_layer(layer, lat = nil, lon = nil)
@@ -107,7 +107,19 @@ module Neo4j
       private
 
       def spatial_post(path, options)
-        Neo4j::Session.current.connection.post("/db/data/#{path}", options).body
+        parse_response! Neo4j::Session.current.connection.post("/db/data/#{path}", options).body
+      end
+
+      def parse_response!(response)
+        request_error!(response[:exception], response[:message], response[:stack_trace]) if response.is_a?(Hash) && response[:exception]
+        response
+      end
+
+      def request_error!(code, message, stack_trace)
+        fail Neo4jrbSpatial::RequestError, <<-ERROR
+  #{ANSI::CYAN}#{code}#{ANSI::CLEAR}: #{message}
+  #{stack_trace}
+ERROR
       end
 
       def get_id(id)

@@ -12,15 +12,31 @@ sudo: false
 cache: bundler
 script:
   - "travis_retry bundle exec rake default --trace"
-  - "bundle exec rubocop"
 language: ruby
-jdk:
-  - oraclejdk8
+jdk: oraclejdk8
 rvm:
   - 2.1.9
   - 2.2.4
   - 2.3.1
+  - jruby-9.0.5.0
 env:
-  - NEO4J_VERSION=2.2.2
-  - NEO4J_VERSION=2.3.3
-  - NEO4J_VERSION=3.0.1
+  global:
+    - JRUBY_OPTS="-J-Xmx1280m -Xcompile.invokedynamic=false -J-XX:+TieredCompilation -J-XX:TieredStopAtLevel=1 -J-noverify -Xcompile.mode=OFF"
+    - NEO4J_VERSION=3.0.1
+  matrix:
+    - NEO4J_URL="http://localhost:7474"
+matrix:
+  include:
+    - rvm: 2.3.1
+      jdk:
+      install:
+      script: "bundle exec rubocop"
+      env: "RUBOCOP=true"
+
+    # Older versions of Neo4j with latest version of Ruby
+    - rvm: 2.3.1
+      env: NEO4J_VERSION=2.3.3
+    - rvm: 2.3.1
+      env: NEO4J_VERSION=2.2.2
+    - rvm: 2.3.1
+      env: NEO4J_VERSION=2.1.8
