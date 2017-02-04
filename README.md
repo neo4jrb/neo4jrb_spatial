@@ -126,6 +126,12 @@ It then drops you back into a QueryProxy in the context of the class. If you had
 
 If you did no define `spatial_index` on your model or what to query against something other than the model's default, you can feed a third argument: the index to use for the query.
 
+## Rake tasks:
+#### `neo4j_spatial:install`
+
+usage: `NEO4J_VERSION='3.0.4' rake neo4j_spatial:install[<env>]`
+If no `env` argument is provided, this defaults to 'development'
+
 ## Additional Resources
 
 Check out the specs and the code for help, it's rather straightforward.
