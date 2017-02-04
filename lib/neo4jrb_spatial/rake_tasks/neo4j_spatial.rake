@@ -38,13 +38,18 @@ namespace :neo4j_spatial do
     compatible_versions
   end
 
-  desc 'install neo4j_spatial into /db/neo4j/[env]/plugins'
+  def neo4j_version_from_install(env)
+    server_file = Dir.glob("db/neo4j/#{env}/lib/neo4j-server-*.jar").first
+    server_file.match(/.*-server-(.*).jar$/)[1] if server_file
+  end
+
+  desc 'Install neo4j_spatial into /db/neo4j/[env]/plugins'
   task :install, :environment do |_, args|
     args.with_defaults(environment: 'development')
     puts "Install Neo4j Spatial (#{args[:environment]} environment)..."
 
     url = 'https://github.com/neo4j-contrib/m2/blob/master/releases/org/neo4j/neo4j-spatial'
-    input_version = ENV['NEO4J_VERSION']
+    input_version = ENV['NEO4J_VERSION'] || neo4j_version_from_install(args[:environment])
     fail ArgumentError, 'Missing NEO4J_VERSION' unless input_version
     spatial_version, neo4j_version = *matching_version(input_version)
 
