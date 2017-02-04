@@ -1,110 +1,170 @@
 module Neo4j
-  module Server
+  module Core
     module Spatial
       def spatial?
-        Neo4j::Session.current.connection.get('/db/data/ext/SpatialPlugin').status == 200
+        spatial_plugin
+        true
+      rescue Neo4j::Server::CypherResponse::ResponseError
+        false
       end
 
       def spatial_plugin
-        parse_response! Neo4j::Session.current.connection.get('/db/data/ext/SpatialPlugin').body
+        call_query = 'CALL spatial.procedures() YIELD name'
+
+        query(call_query, {}).map(&:name)
       end
 
-      def add_point_layer(layer, lat = nil, lon = nil)
+      def add_point_layer(layer, lat = nil, lon = nil, execute: true)
         options = {
           layer: layer,
-          lat: lat || 'lat',
-          lon: lon || 'lon'
+          lon: lon || 'lon',
+          lat: lat || 'lat'
         }
 
-        spatial_post('/ext/SpatialPlugin/graphdb/addSimplePointLayer', options)
+        wrap_spatial_procedure('addPointLayerXY', options, execute)
       end
 
-      def add_editable_layer(layer, format = 'WKT', node_property_name = 'wkt')
-        options = {
-          layer: layer,
-          format: format,
-          nodePropertyName: node_property_name
-        }
+      def spatial_procedure(procedure_name, procedure_args)
+        call_params = procedure_args.keys.map { |key| "{#{key}}" }.join(', ')
+        call_query = "spatial.#{procedure_name}(#{call_params}) YIELD node"
 
-        spatial_post('/ext/SpatialPlugin/graphdb/addEditableLayer', options)
+        query_ = Query.new(session: self)
+        query_.call(call_query).params(procedure_args)
       end
 
-      def get_layer(layer)
-        options = {
-          layer: layer
-        }
-        spatial_post('/ext/SpatialPlugin/graphdb/getLayer', options)
+      def wrap_spatial_procedure(procedure_name, procedure_args, execute = true)
+        procedure = spatial_procedure(procedure_name, procedure_args)
+        procedure = execute_and_format_response(procedure) if execute
+        procedure
       end
 
-      def add_geometry_to_layer(layer, geometry)
+      def execute_and_format_response(procedure)
+        procedure.response.map(&:node)
+      end
+
+      def add_editable_layer(layer, format = 'WKT', node_property_name = 'wkt', execute: true)
+        # UGH don't know how to handle non-WKT things. Is this necessary? Maybe...
+        # TODO: remove old version that uses spatial_post
+        if format == 'WKT'
+          options = {
+            layer: layer,
+            node_property_name: node_property_name
+          }
+
+          wrap_spatial_procedure('addWKTLayer', options, execute)
+        else
+          options = {
+            layer: layer,
+            format: format,
+            nodePropertyName: node_property_name
+          }
+
+          spatial_post('/ext/SpatialPlugin/graphdb/addEditableLayer', options)
+        end
+      end
+
+      def get_layer(layer, execute: true)
+        options = {layer: layer}
+        wrap_spatial_procedure('layer', options, execute)
+      end
+
+      def add_geometry_to_layer(layer, geometry, execute: true)
         options = {
           layer: layer,
           geometry: geometry
         }
-        spatial_post('/ext/SpatialPlugin/graphdb/addGeometryWKTToLayer', options)
+        wrap_spatial_procedure('addWKT', options, execute)
       end
 
-      def edit_geometry_from_layer(layer, geometry, node)
+      def edit_geometry_from_layer(layer, geometry, node, execute: true)
         options = {
           layer: layer,
           geometry: geometry,
           geometryNodeId: get_id(node)
         }
-        spatial_post('/ext/SpatialPlugin/graphdb/updateGeometryFromWKT', options)
+        wrap_spatial_procedure('updateFromWKT', options, execute)
       end
 
-      def add_node_to_layer(layer, node)
+      # Hmmm this one has trouble, because we actually need to MATCH the node itself...
+      # Wish this could be cleaner but for now it works...
+      def add_node_to_layer(layer, node, execute: true)
         options = {
           layer: layer,
-          node: "#{resource_url}node/#{node.neo_id}"
+          node_id: node.neo_id
         }
-        spatial_post('/ext/SpatialPlugin/graphdb/addNodeToLayer', options)
+
+        query_ = Query.new(session: self)
+        procedure = query_.match(:n)
+          .where('id(n) = {node_id}')
+          .with(:n).call('spatial.addNode({layer}, n) YIELD node')
+          .return('node')
+          .params(options)
+
+        procedure = execute_and_format_response(procedure) if execute
+        procedure
       end
 
-      def find_geometries_in_bbox(layer, minx, maxx, miny, maxy)
+      def find_geometries_in_bbox(layer, minx, maxx, miny, maxy, execute: true)
         options = {
           layer: layer,
-          minx: minx,
-          maxx: maxx,
-          miny: miny,
-          maxy: maxy
+          min: {lon: minx, lat: miny},
+          max: {lon: maxx, lat: maxy}
         }
-        spatial_post('/ext/SpatialPlugin/graphdb/findGeometriesInBBox', options)
+
+        wrap_spatial_procedure('bbox', options, execute)
       end
 
-      def find_geometries_within_distance(layer, pointx, pointy, distance)
+      def find_geometries_within_distance(layer, pointx, pointy, distance, execute: true)
+        warn_deprecated(name: __method__, preferred: 'within_distance')
+        within_distance(layer, pointx, pointy, distance, execute: execute)
+      end
+
+      def within_distance(layer, pointx, pointy, distance, execute: true)
         options = {
           layer: layer,
-          pointX: pointx,
-          pointY: pointy,
+          coordinate: {lon: pointx, lat: pointy},
           distanceInKm: distance
         }
-        spatial_post('/ext/SpatialPlugin/graphdb/findGeometriesWithinDistance', options)
+
+        wrap_spatial_procedure('withinDistance', options, execute)
+      end
+
+      def add_layer(name, type = nil, lat = nil, lon = nil, execute: true)
+        # supported names for type are: 'SimplePoint', 'WKT', 'WKB'
+        type ||= 'SimplePoint'
+
+        # Hmm should keep this or let it break?
+        type = 'SimplePoint' if type == 'point'
+
+        options = {
+          name: name,
+          type: type || 'point',
+          encoderConfig: "#{lon || 'lon'}:#{lat || 'lat'}"
+        }
+        wrap_spatial_procedure('addLayer', options, execute)
       end
 
       def create_spatial_index(name, type = nil, lat = nil, lon = nil)
-        options = {
-          name: name,
-          config: {
-            provider: 'spatial',
-            geometry_type: type || 'point',
-            lat: lat || 'lat',
-            lon: lon || 'lon'
-          }
-        }
-        spatial_post('/index/node', options)
+        warn_deprecated(name: __method__, preferred: 'add_layer')
+        add_layer(name, type, lat, lon)
       end
 
       def add_node_to_spatial_index(index, node)
-        options = {
-          uri: "/#{get_id(node)}",
-          key: 'k',
-          value: 'v'
-        }
-        spatial_post("/index/node/#{index}", options)
+        warn_deprecated(name: __method__, preferred: 'add_node_to_layer')
+        add_node_to_layer(index, node)
+      end
+
+      def import_shapefile_to_layer(layer, file_uri)
+        options = {layer: layer, file_uri: file_uri}
+
+        spatial_procedure('importShapefileToLayer', options)
       end
 
       private
+
+      def warn_deprecated(name:, preferred:)
+        puts "WARNING: method '#{name}' is deprecated. Please use #{preferred}, which does the same thing."
+      end
 
       def spatial_post(path, options)
         parse_response! Neo4j::Session.current.connection.post("/db/data/#{path}", options).body
@@ -117,9 +177,9 @@ module Neo4j
 
       def request_error!(code, message, stack_trace)
         fail Neo4jrbSpatial::RequestError, <<-ERROR
-  #{ANSI::CYAN}#{code}#{ANSI::CLEAR}: #{message}
-  #{stack_trace}
-ERROR
+          #{ANSI::CYAN}#{code}#{ANSI::CLEAR}: #{message}
+          #{stack_trace}
+        ERROR
       end
 
       def get_id(id)
@@ -128,7 +188,7 @@ ERROR
         when Array
           get_id(id.first)
         when Hash
-          id[:self].split('/').last
+          id[:id]
         when String
           id.split('/').last
         else
@@ -137,7 +197,7 @@ ERROR
       end
     end
 
-    class CypherSession < Neo4j::Session
+    class CypherSession
       include Spatial
     end
   end

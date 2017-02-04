@@ -10,3 +10,13 @@
 .idea
 bin/
 /db
+
+# shapfile stuff
+*.CPG
+*.dbf
+*.prj
+*.sbn
+*.sbx
+*.shp
+*.shp.xml
+*.shx
