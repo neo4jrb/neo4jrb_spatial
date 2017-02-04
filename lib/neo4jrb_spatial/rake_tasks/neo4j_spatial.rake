@@ -11,12 +11,31 @@ namespace :neo4j_spatial do
       Gem::Version.new(version) >= Gem::Version.new(min_version)
   end
 
+  def fail_with_help(version, latest_versions)
+    message = <<-MSG
+
+    No compatible version of neo4j_spatial was found for neo4j version #{version}.
+    The latest version is (neo4j_spatial=#{latest_versions[0]}, neo4j=#{latest_versions[1]}).
+
+    To install neo4j_spatial for a different version, run:
+    NEO4J_VERSION='#{latest_versions[1]}' bundle exec rake neo4j_spatial:install
+
+    MSG
+
+    fail ArgumentError, message
+  end
+
   def matching_version(version)
     uri = 'https://raw.githubusercontent.com/neo4j-contrib/m2/master/releases/org/neo4j/neo4j-spatial/maven-metadata.xml'
     versions = Net::HTTP.get_response(URI.parse(uri)).body
     versions = versions.scan(/<version>([a-z\-0-9\.]+)<\/version>/)
     versions.map! { |e| e.first.split('-neo4j-') }
     versions.select { |e| match_version?(version, e.last) }.last
+
+    compatible_versions = versions.select { |e| match_version?(version, e.last) }.last
+    fail_with_help(version, versions.last) if compatible_versions.nil?
+
+    compatible_versions
   end
 
   desc 'install neo4j_spatial into /db/neo4j/[env]/plugins'
