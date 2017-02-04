@@ -6,7 +6,7 @@ end
 
 namespace :neo4j_spatial do
   def match_version?(version, max_version)
-    min_version = max_version.split('.')[0..-1].join('.')
+    min_version = max_version.split('.')[0..-2].join('.')
     Gem::Version.new(version) <= Gem::Version.new(max_version) &&
       Gem::Version.new(version) >= Gem::Version.new(min_version)
   end
