@@ -4,105 +4,130 @@ describe Neo4j::Core::Spatial do
   let(:neo) { current_session }
 
   describe 'find the spatial plugin' do
-    it 'can get a description of the spatial plugin' do
+    it 'can get a list of the spatial plugin procedures' do
       expect(neo.spatial?).to eq(true)
 
-      procedures = neo.spatial_plugin
+      procedures = neo.spatial_procedures
       expect(procedures).not_to be_nil
       expect(procedures).to include('spatial.addWKTLayer')
     end
   end
 
-  describe 'add a point layer' do
-    it 'can add a simple point layer' do
-      response = neo.add_point_layer('restaurants')
-      pl = response.first
+  describe 'adding a layer (and removing)' do
+    describe '#add_layer' do
+      it 'works when passed SimplePoint type' do
+        layer = neo.add_layer('simple_layer', 'SimplePoint').first
 
-      expect(pl.props[:layer]).to eq('restaurants')
-      expect(pl.props[:geomencoder_config]).to eq('lon:lat')
+        expect(layer.props[:layer]).to eq('simple_layer')
+        expect(layer.props[:layer_class]).to match('SimplePointLayer')
+        expect(layer.props[:geomencoder]).to match('SimplePointEncoder')
+        expect(layer.props[:geomencoder_config]).to eq('lon:lat')
+
+        neo.remove_layer('simple_layer')
+      end
+
+      it 'works when passed different lat and lon configs' do
+        layer = neo.add_layer('simple_layer_config', 'SimplePoint', 'attitude', 'fortitude').first
+
+        expect(layer.props[:layer]).to eq('simple_layer_config')
+        expect(layer.props[:layer_class]).to match('SimplePointLayer')
+        expect(layer.props[:geomencoder]).to match('SimplePointEncoder')
+        expect(layer.props[:geomencoder_config]).to eq('fortitude:attitude')
+
+        neo.remove_layer('simple_layer_config')
+      end
+
+      it 'works when passed WKT type' do
+        layer = neo.add_layer('wkt_layer', 'WKT').first
+
+        expect(layer.props[:layer]).to eq('wkt_layer')
+        expect(layer.props[:layer_class]).to match('EditableLayerImpl')
+        expect(layer.props[:geomencoder]).to match('WKTGeometryEncoder')
+        expect(layer.props[:geomencoder_config]).to eq('lon:lat')
+
+        neo.remove_layer('wkt_layer')
+      end
+
+      it 'works when passed WKB type' do
+        layer = neo.add_layer('wkb_layer', 'WKB').first
+
+        expect(layer.props[:layer]).to eq('wkb_layer')
+        expect(layer.props[:layer_class]).to match('EditableLayerImpl')
+        expect(layer.props[:geomencoder]).to match('WKBGeometryEncoder')
+        expect(layer.props[:geomencoder_config]).to eq('lon:lat')
+
+        neo.remove_layer('wkb_layer')
+      end
     end
 
-    it 'can add a simple point layer with lat and long' do
-      response = neo.add_point_layer('coffee_shops', 'latitude', 'longitude')
-      pl = response.first
+    describe '#add_point_layer' do
+      it 'can add a simple point layer' do
+        response = neo.add_point_layer('restaurants').first
 
-      expect(pl.props[:layer]).to eq('coffee_shops')
-      expect(pl.props[:geomencoder_config]).to eq('longitude:latitude')
+        expect(response.props[:layer]).to eq('restaurants')
+        neo.remove_layer('restaurants')
+      end
+    end
+
+    describe '#add_wkt_layer' do
+      it 'can add a wkt layer' do
+        response = neo.add_wkt_layer('zipcodes', 'zone_area')
+        el = response.first
+
+        expect(el).not_to be_nil
+        expect(el.props[:layer]).to eq('zipcodes')
+        expect(el.props[:geomencoder_config]).to eq('zone_area')
+
+        neo.remove_layer('zipcodes')
+      end
     end
   end
 
-  describe 'add an editable layer' do
-    it 'can add an editable layer' do
-      response = neo.add_editable_layer('zipcodes', 'WKT', 'wkt')
-      el = response.first
-      expect(el).not_to be_nil
-      expect(el.props[:layer]).to eq('zipcodes')
-      expect(el.props[:geomencoder_config]).to eq('wkt')
-    end
-  end
 
   describe 'get a spatial layer' do
     it 'can get a layer' do
-      # TODO: should this just return one node instead of array?
-      sl = neo.get_layer('restaurants').first
-      expect(sl).not_to be_nil
-      expect(sl.props[:layer]).to eq('restaurants')
-    end
-  end
+      neo.add_point_layer('restaurants')
 
-  describe 'add_layer' do
-    it 'works when passed WKT type' do
-      layer = neo.add_layer('testaurants', 'WKT').first
+      layer = neo.get_layer('restaurants').first
+      expect(layer).not_to be_nil
 
-      expect(layer.props[:layer]).to eq('testaurants')
-      expect(layer.props[:layer_class]).to match('EditableLayerImpl')
-      expect(layer.props[:geomencoder]).to match('WKTGeometryEncoder')
-      expect(layer.props[:geomencoder_config]).to eq('lon:lat')
-    end
+      expect(layer.props[:layer]).to eq('restaurants')
 
-    it 'works when passed WKB type' do
-      layer = neo.add_layer('bestaurants', 'WKB').first
-
-      expect(layer.props[:layer]).to eq('bestaurants')
-      expect(layer.props[:layer_class]).to match('EditableLayerImpl')
-      expect(layer.props[:geomencoder]).to match('WKBGeometryEncoder')
-      expect(layer.props[:geomencoder_config]).to eq('lon:lat')
-    end
-  end
-
-  describe 'create a spatial index' do
-    it 'can create a spatial index' do
-      layer = neo.create_spatial_index('layer_pretending_to_be_index').first
-      expect(layer.props[:geomencoder_config]).to eq('lon:lat')
-      expect(layer.props[:layer_class]).to match('SimplePointLayer')
-      expect(layer.props[:layer]).to eq('layer_pretending_to_be_index')
+      neo.remove_layer('restaurants')
     end
   end
 
   describe 'add geometry to spatial layer' do
     it 'can add a geometry' do
+      neo.add_wkt_layer('zipcodes')
+
       geometry = 'LINESTRING (15.2 60.1, 15.3 60.1)'
-      geo = neo.add_geometry_to_layer('zipcodes', geometry)
+      geo = neo.add_wkt('zipcodes', geometry)
       expect(geo).not_to be_nil
       expect(geo.first.props[:wkt]).to eq(geometry)
+
+      neo.remove_layer('zipcodes')
     end
   end
 
   describe 'update geometry from spatial layer' do
     it 'can update a geometry' do
+      neo.add_wkt_layer('zipcodes')
+
       geometry = 'LINESTRING (15.2 60.1, 15.3 60.1)'
-      geo = neo.add_geometry_to_layer('zipcodes', geometry)
+      geo = neo.add_wkt('zipcodes', geometry)
       expect(geo).not_to be_nil
       expect(geo.first.props[:wkt]).to eq(geometry)
       geometry = 'LINESTRING (14.7 60.1, 15.3 60.1)'
-      existing_geo = neo.edit_geometry_from_layer('zipcodes', geometry, geo)
+      existing_geo = neo.update_from_wkt('zipcodes', geometry, geo)
       expect(existing_geo.first.props[:wkt]).to eq(geometry)
       expect(existing_geo.first.neo_id.to_i).to eq(geo.first.neo_id.to_i)
     end
   end
 
-  describe 'add a node to a layer' do
-    it 'can add a node to a simple point layer' do
+  describe '#add_node_to_layer' do
+    it 'works' do
+      neo.add_layer('restaurants')
       properties = {name: "Max's Restaurant", lat: 41.8819, lon: 87.6278}
       node_query = Neo4j::Core::Query.new(session: neo).create(n: {Restaurant: properties}).return(:n)
       node = neo.query(node_query).first.n
@@ -111,28 +136,72 @@ describe Neo4j::Core::Spatial do
       added = neo.add_node_to_layer('restaurants', node)
       expect(added.first.props[:lat]).to eq(properties[:lat])
       expect(added.first.props[:lon]).to eq(properties[:lon])
+
+      neo.remove_layer('restaurants')
     end
   end
 
-  describe 'find geometries in a bounding box' do
-    it 'can find a geometry in a bounding box' do
-      properties = {name: "Max's Restaurant", lat: 41.8819, lon: 87.6278}
-      nodes = neo.find_geometries_in_bbox('restaurants', 87.5, 87.7, 41.7, 41.9)
-      expect(nodes).not_to be_empty
-      result = nodes.find { |node| node.props[:name] == "Max's Restaurant" }
-      expect(result.props[:lat]).to eq(properties[:lat])
-      expect(result.props[:lon]).to eq(properties[:lon])
-    end
-  end
+  describe 'spatial matching queries' do
+    let(:properties) { { name: "Max's Restaurant", lat: 41.8819, lon: 87.6278 } }
+    let(:node_query) { Neo4j::Core::Query.new(session: neo).create(n: {Restaurant: properties}).return(:n) }
 
-  describe 'find geometries within distance' do
-    it 'can find a geometry within distance' do
-      properties = {name: "Max's Restaurant", lat: 41.8819, lon: 87.6278}
-      nodes = neo.find_geometries_within_distance('restaurants', 87.627, 41.881, 10)
-      expect(nodes).not_to be_empty
-      result = nodes.find { |node| node.props[:name] == "Max's Restaurant" }
-      expect(result.props[:lat]).to eq(properties[:lat])
-      expect(result.props[:lon]).to eq(properties[:lon])
+    before do
+      neo.add_layer('restaurants')
+      node = neo.query(node_query).first.n
+      neo.add_node_to_layer('restaurants', node)
+    end
+
+    after do
+      neo.remove_layer('restaurants')
+    end
+
+    describe '#bbox (#find_geometries_in_bbox)' do
+      it 'can find a geometry in a bounding box' do
+        min = { lon: 87.5, lat: 41.7 }
+        max = { lon: 87.7, lat: 41.9 }
+
+        nodes = neo.find_geometries_in_bbox('restaurants', min, max)
+        expect(nodes).not_to be_empty
+
+        result = nodes.find { |n| n.props[:name] == "Max's Restaurant" }
+        expect(result.props[:lat]).to eq(properties[:lat])
+        expect(result.props[:lon]).to eq(properties[:lon])
+      end
+    end
+
+    describe '#within_distance (#find_geometries_within_distance)' do
+      it 'can find a geometry within distance' do
+        nodes = neo.find_geometries_within_distance('restaurants', { lon: 87.627, lat: 41.881 }, 10)
+        expect(nodes).not_to be_empty
+
+        result = nodes.find { |n| n.props[:name] == "Max's Restaurant" }
+        expect(result.props[:lat]).to eq(properties[:lat])
+        expect(result.props[:lon]).to eq(properties[:lon])
+      end
+    end
+
+    describe '#intersects' do
+      it 'returns nodes that intersect the given geometry' do
+        # TODO: could make a ruby class for geometries
+        geom = 'POLYGON ((87.5 41.7, 87.5 41.9, 87.7 41.9, 87.7 41.7, 87.5 41.7))'
+        nodes = neo.intersects('restaurants', geom)
+        expect(nodes.count).to eq(1)
+
+        expect(nodes.first.props[:name]).to eq("Max's Restaurant")
+      end
+    end
+
+    describe '#closest' do
+      it 'returns the closest node to the given coordinate' do
+        other_properties = { name: "Min's Restaurant", lat: 41.87, lon: 87.6 }
+        other_node_query = Neo4j::Core::Query.new(session: neo).create(n: {Restaurant: other_properties}).return(:n)
+        neo.query(other_node_query).first.n
+
+        coordinate = { lat: 41.89, lon: 87.63 }
+
+        closest = neo.closest('restaurants', coordinate).first
+        expect(closest.props[:name]).to eq(properties[:name])
+      end
     end
   end
 
@@ -146,39 +215,4 @@ describe Neo4j::Core::Spatial do
   #     binding.pry
   #   end
   # end
-
-  describe 'ActiveNode integration' do
-    let(:node) { Restaurant.create(name: "Chris's Restauarant", lat: 60.1, lon: 15.2) }
-    let(:outside_node) { Restaurant.create(name: 'Lily Thai', lat: 59.0, lon: 14.9) }
-
-    class Restaurant
-      include Neo4j::ActiveNode
-      include Neo4j::ActiveNode::Spatial
-
-      spatial_index 'restaurants'
-      property :name
-      property :lat
-      property :lon
-    end
-
-    before do
-      Restaurant.delete_all
-      [node, outside_node].each(&:add_to_spatial_index)
-    end
-
-    # let(:match) { Restaurant.all.spatial_match(:r, 'withinDistance:[60.0,15.0,100.0]') }
-    let(:match) { Restaurant.all.within_distance(60.0, 15.0, 100.0) }
-
-    it 'is a QueryProxy' do
-      expect(match).to respond_to(:to_cypher)
-    end
-
-    it 'matches to the node in the spatial index' do
-      expect(match.first).to eq node
-    end
-
-    it 'only returns expected nodes' do
-      expect(match.to_a).not_to include(outside_node)
-    end
-  end
 end
