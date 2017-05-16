@@ -5,26 +5,42 @@ module Neo4j
         other.extend(ClassMethods)
       end
 
-      def add_to_spatial_index(index_name = nil)
-        index = index_name || self.class.spatial_index_name
-        fail 'index name not found' unless index
-        Neo4j::ActiveBase.current_session.add_node_to_spatial_index(index, self)
+      def add_to_spatial_layer(layer_name = nil)
+        layer = layer_name || self.class.spatial_layer_name
+        fail 'layer name not found' unless layer
+        Neo4j::ActiveBase.current_session.add_node_to_layer(layer, self)
       end
 
       module ClassMethods
-        attr_reader :spatial_index_name
-        def spatial_index(index_name = nil)
-          return spatial_index_name unless index_name
-          # create_index_callback(index_name)
-          @spatial_index_name = index_name
+        attr_reader :spatial_layer_name
+        attr_reader :spatial_layer_type
+        attr_reader :spatial_layer_config
+
+        def spatial_layer(layer_name = nil, options = {})
+          return spatial_layer_name unless layer_name
+
+          @spatial_layer_name = layer_name
+          @spatial_layer_type = options.fetch(:type, 'SimplePoint')
+          @spatial_layer_config = options.fetch(:config, 'lon:lat')
+
+          spatial_layer_name
         end
 
-        # This will not work for now. Neo4j Spatial's REST API doesn't seem to work within transactions.
-        # def create_index_callback(index_name)
-        #   after_create(proc { |node| Neo4j::Session.current.add_node_to_spatial_index(index_name, node) })
-        # end
+        def create_layer
+          fail 'layer name not found' unless spatial_layer_name
 
-        # private :create_index_callback
+          lon_name, lat_name = spatial_layer_config.split(':')
+
+          Neo4j::ActiveBase.current_session.add_layer(spatial_layer_name, spatial_layer_type, lat_name, lon_name)
+        end
+
+        def remove_layer
+          fail 'layer name not found' unless spatial_layer_name
+
+          Neo4j::ActiveBase.current_session.remove_layer(spatial_layer_name)
+        end
+
+        # private
       end
     end
 
@@ -33,38 +49,57 @@ module Neo4j
     # work for one of the procedures (withinDistance, bbox, etc.)
     module Query
       class QueryProxy
-        # def spatial_match_retro(var, params_string, spatial_index = nil)
+        # def spatial_match_retro(var, params_string, spatial_layer = nil)
         #   Neo4j::Session.current.query
-        #     .start("#{var} = node:#{index}({spatial_params})")
+        #     .start("#{var} = node:#{layer}({spatial_params})")
         #     .proxy_as(model, var)
         #     .params(spatial_params: params_string)
         #
         # end
 
-        def spatial_match(var, params, spatial_index = nil)
-          index = model.spatial_index_name || spatial_index
-          fail 'Cannot query without index. Set index in model or as third argument.' unless index
+        # NOTE: should these be scopes?
+        def spatial_match(var, params, spatial_layer = nil)
+          layer = model.spatial_layer_name || spatial_layer
+          fail 'Cannot query without layer. Set layer in model or as third argument.' unless layer
 
           if params.is_a?(String)
             # TODO: deprecation warning
             params = parse_retro_params(params)
           end
-
-          # spatial.bbox
-          # spatial.closest
-          # spatial.intersects
-          # spatial.withinDistance
         end
 
         def parse_retro_params(params)
-
         end
 
-        def within_distance(lat, lon, distance, layer_name = nil)
-          layer = model.spatial_index_name || layer_name
+        def within_distance(coordinate, distance, layer_name = nil)
+          layer = model.spatial_layer_name || layer_name
 
           Neo4j::ActiveBase.current_session
-            .within_distance(layer, lon, lat, distance, execute: false)
+            .within_distance(layer, coordinate, distance, execute: false)
+            .proxy_as(model, :node)
+        end
+
+        def bbox(min, max, layer_name = nil)
+          layer = model.spatial_layer_name || layer_name
+
+          Neo4j::ActiveBase.current_session
+            .bbox(layer, min, max, execute: false)
+            .proxy_as(model, :node)
+        end
+
+        def closest(coordinate, distance = 100, layer_name = nil)
+          layer = model.spatial_layer_name || layer_name
+
+          Neo4j::ActiveBase.current_session
+            .closest(layer, coordinate, distance, execute: false)
+            .proxy_as(model, :node)
+        end
+
+        def intersects(geometry, layer_name = nil)
+          layer = model.spatial_layer_name || layer_name
+
+          Neo4j::ActiveBase.current_session
+            .intersects(layer, geometry, execute: false)
             .proxy_as(model, :node)
         end
       end

@@ -111,6 +111,7 @@ module Neo4j
         wrap_spatial_procedure('intersects', options, execute: execute)
       end
 
+      # TODO: figure out what closest is supposed to do...
       def closest(layer, coordinate, distance = 100, execute: true)
         options = {
           layer: layer,
@@ -120,16 +121,6 @@ module Neo4j
 
         wrap_spatial_procedure('closest', options, execute: execute)
       end
-
-      # def create_spatial_index(name, type = nil, lat = nil, lon = nil)
-      #   warn_deprecated(name: __method__, preferred: 'add_layer')
-      #   add_layer(name, type, lat, lon)
-      # end
-      #
-      # def add_node_to_spatial_index(index, node)
-      #   warn_deprecated(name: __method__, preferred: 'add_node_to_layer')
-      #   add_node_to_layer(index, node)
-      # end
 
       def import_shapefile_to_layer(layer, file_uri)
         options = {layer: layer, file_uri: file_uri}

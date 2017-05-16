@@ -182,7 +182,6 @@ describe Neo4j::Core::Spatial do
 
     describe '#intersects' do
       it 'returns nodes that intersect the given geometry' do
-        # TODO: could make a ruby class for geometries
         geom = 'POLYGON ((87.5 41.7, 87.5 41.9, 87.7 41.9, 87.7 41.7, 87.5 41.7))'
         nodes = neo.intersects('restaurants', geom)
         expect(nodes.count).to eq(1)
@@ -192,6 +191,7 @@ describe Neo4j::Core::Spatial do
     end
 
     describe '#closest' do
+      # TODO: poor test
       it 'returns the closest node to the given coordinate' do
         other_properties = { name: "Min's Restaurant", lat: 41.87, lon: 87.6 }
         other_node_query = Neo4j::Core::Query.new(session: neo).create(n: {Restaurant: other_properties}).return(:n)
