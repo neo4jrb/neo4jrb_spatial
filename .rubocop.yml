@@ -21,6 +21,9 @@ Style/SpaceInsideHashLiteralBraces:
 Style/FileName:
   Enabled: false
 
+Metrics/AbcSize:
+  Max: 20
+
 #---------------------------
 # Don't intend to fix these:
 #---------------------------
@@ -68,5 +71,3 @@ Style/Lambda:
 # Reason: I'm proud to be part of the double negative Ruby tradition
 Style/DoubleNegation:
   Enabled: false
-
-

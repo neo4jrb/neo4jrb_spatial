@@ -142,7 +142,7 @@ describe Neo4j::Core::Spatial do
   end
 
   describe 'spatial matching queries' do
-    let(:properties) { { name: "Max's Restaurant", lat: 41.8819, lon: 87.6278 } }
+    let(:properties) { {name: "Max's Restaurant", lat: 41.8819, lon: 87.6278} }
     let(:node_query) { Neo4j::Core::Query.new(session: neo).create(n: {Restaurant: properties}).return(:n) }
 
     before do
@@ -157,8 +157,8 @@ describe Neo4j::Core::Spatial do
 
     describe '#bbox (#find_geometries_in_bbox)' do
       it 'can find a geometry in a bounding box' do
-        min = { lon: 87.5, lat: 41.7 }
-        max = { lon: 87.7, lat: 41.9 }
+        min = {lon: 87.5, lat: 41.7}
+        max = {lon: 87.7, lat: 41.9}
 
         nodes = neo.find_geometries_in_bbox('restaurants', min, max)
         expect(nodes).not_to be_empty
@@ -171,7 +171,7 @@ describe Neo4j::Core::Spatial do
 
     describe '#within_distance (#find_geometries_within_distance)' do
       it 'can find a geometry within distance' do
-        nodes = neo.find_geometries_within_distance('restaurants', { lon: 87.627, lat: 41.881 }, 10)
+        nodes = neo.find_geometries_within_distance('restaurants', {lon: 87.627, lat: 41.881}, 10)
         expect(nodes).not_to be_empty
 
         result = nodes.find { |n| n.props[:name] == "Max's Restaurant" }
@@ -193,11 +193,11 @@ describe Neo4j::Core::Spatial do
     describe '#closest' do
       # TODO: poor test
       it 'returns the closest node to the given coordinate' do
-        other_properties = { name: "Min's Restaurant", lat: 41.87, lon: 87.6 }
+        other_properties = {name: "Min's Restaurant", lat: 41.87, lon: 87.6}
         other_node_query = Neo4j::Core::Query.new(session: neo).create(n: {Restaurant: other_properties}).return(:n)
         neo.query(other_node_query).first.n
 
-        coordinate = { lat: 41.89, lon: 87.63 }
+        coordinate = {lat: 41.89, lon: 87.63}
 
         closest = neo.closest('restaurants', coordinate).first
         expect(closest.props[:name]).to eq(properties[:name])

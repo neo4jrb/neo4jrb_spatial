@@ -1,6 +1,8 @@
 module Neo4j
   module Core
+    # rubocop:disable Metrics/ModuleLength
     module Spatial
+      # rubocop:enable Metrics/ModuleLength
       def spatial?
         spatial_procedures
         true
@@ -27,12 +29,12 @@ module Neo4j
       end
 
       def remove_layer(name)
-        options = { name: name }
+        options = {name: name}
         wrap_spatial_procedure('removeLayer', options, node: false)
       end
 
       def add_point_layer(layer)
-        options = { layer: layer }
+        options = {layer: layer}
 
         wrap_spatial_procedure('addPointLayer', options)
       end
@@ -78,21 +80,21 @@ module Neo4j
 
         query_ = Query.new(session: self)
         procedure = query_.match(:n)
-                          .where('id(n) = {node_id}')
-                          .with(:n).call('spatial.addNode({layer}, n) YIELD node')
-                          .return('node')
-                          .params(options)
+                    .where('id(n) = {node_id}')
+                    .with(:n).call('spatial.addNode({layer}, n) YIELD node')
+                    .return('node')
+                    .params(options)
 
         procedure = execute_and_format_response(procedure) if execute
         procedure
       end
 
       def bbox(layer, min, max, execute: true)
-        options = { layer: layer, min: min, max: max }
+        options = {layer: layer, min: min, max: max}
 
         wrap_spatial_procedure('bbox', options, execute: execute)
       end
-      alias find_geometries_in_bbox bbox
+      alias_method :find_geometries_in_bbox, :bbox
 
       def within_distance(layer, coordinate, distance, execute: true)
         options = {
@@ -103,10 +105,10 @@ module Neo4j
 
         wrap_spatial_procedure('withinDistance', options, execute: execute)
       end
-      alias find_geometries_within_distance within_distance
+      alias_method :find_geometries_within_distance, :within_distance
 
       def intersects(layer, geometry, execute: true)
-        options = { layer: layer, geometry: geometry }
+        options = {layer: layer, geometry: geometry}
 
         wrap_spatial_procedure('intersects', options, execute: execute)
       end
@@ -166,29 +168,9 @@ module Neo4j
         end
       end
 
-      # def warn_deprecated(name:, preferred:)
-      #   puts "WARNING: method '#{name}' is deprecated. Please use #{preferred}, which does the same thing."
-      # end
-
-      def request_error!(code, message, stack_trace)
-        fail Neo4jrbSpatial::RequestError, <<-ERROR
-          #{ANSI::CYAN}#{code}#{ANSI::CLEAR}: #{message}
-          #{stack_trace}
-        ERROR
-      end
-
       def get_id(id)
-        return id.neo_id if id.respond_to?(:neo_id)
-        case id
-        when Array
-          get_id(id.first)
-        when Hash
-          id[:id]
-        when String
-          id.split('/').last
-        else
-          id
-        end
+        return get_id(id.first) if id.is_a?(Array)
+        id.neo_id
       end
     end
 
