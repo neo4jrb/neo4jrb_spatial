@@ -21,9 +21,6 @@ Style/SpaceInsideHashLiteralBraces:
 Style/FileName:
   Enabled: false
 
-Metrics/AbcSize:
-  Max: 20
-
 #---------------------------
 # Don't intend to fix these:
 #---------------------------

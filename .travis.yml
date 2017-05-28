@@ -8,7 +8,6 @@ install:
   - "bundle exec rake neo4j_spatial:install"
   - "bundle exec rake neo4j:start --trace"
   - "sleep 20"
-  - "bundle exec rake neo4j:generate_schema_migration[constraint,Restaurant,uuid]"
 sudo: false
 cache: bundler
 script:

@@ -1,8 +1,6 @@
 module Neo4j
   module Core
-    # rubocop:disable Metrics/ModuleLength
     module Spatial
-      # rubocop:enable Metrics/ModuleLength
       def spatial?
         spatial_procedures
         true
@@ -11,9 +9,7 @@ module Neo4j
       end
 
       def spatial_procedures
-        call_query = 'CALL spatial.procedures() YIELD name'
-
-        query(call_query, {}).map(&:name)
+        query('CALL spatial.procedures() YIELD name').map(&:name)
       end
 
       def add_layer(name, type = nil, lat = nil, lon = nil)
@@ -73,17 +69,12 @@ module Neo4j
       # Hmmm this one has trouble, because we actually need to MATCH the node itself...
       # Wish this could be cleaner but for now it works...
       def add_node_to_layer(layer, node, execute: true)
-        options = {
-          layer: layer,
-          node_id: node.neo_id
-        }
-
         query_ = Query.new(session: self)
         procedure = query_.match(:n)
                     .where('id(n) = {node_id}')
                     .with(:n).call('spatial.addNode({layer}, n) YIELD node')
                     .return('node')
-                    .params(options)
+                    .params(layer: layer, node_id: node.neo_id)
 
         procedure = execute_and_format_response(procedure) if execute
         procedure
@@ -132,17 +123,10 @@ module Neo4j
 
       protected
 
-      def spatial_procedure(procedure_name, procedure_args)
-        call_params = procedure_args.keys.map { |key| "{#{key}}" }.join(', ')
-        call_query = "spatial.#{procedure_name}(#{call_params}) YIELD node"
-
-        query_ = Query.new(session: self)
-        query_.call(call_query).params(procedure_args)
-      end
-
-      def spatial_procedure_without_node(procedure_name, procedure_args)
+      def spatial_procedure(procedure_name, procedure_args, with_node = true)
         call_params = procedure_args.keys.map { |key| "{#{key}}" }.join(', ')
         call_query = "spatial.#{procedure_name}(#{call_params})"
+        call_query += ' YIELD node' if with_node
 
         query_ = Query.new(session: self)
         query_.call(call_query).params(procedure_args)
@@ -152,11 +136,7 @@ module Neo4j
         execute = execution_args.fetch(:execute, true)
         node = execution_args.fetch(:node, true)
 
-        procedure = if node
-                      spatial_procedure(procedure_name, procedure_args)
-                    else
-                      spatial_procedure_without_node(procedure_name, procedure_args)
-                    end
+        procedure = spatial_procedure(procedure_name, procedure_args, node)
 
         procedure = execute_and_format_response(procedure) if execute
         procedure

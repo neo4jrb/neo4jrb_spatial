@@ -29,12 +29,11 @@ def matching_version(version)
   versions = Net::HTTP.get_response(URI.parse(uri)).body
   versions = versions.scan(/<version>([a-z\-0-9\.]+)<\/version>/)
   versions.map! { |e| e.first.split('-neo4j-') }
-  versions.select { |e| match_version?(version, e.last) }.last
 
-  compatible_versions = versions.select { |e| match_version?(version, e.last) }.last
-  fail_with_help(version, versions.last) if compatible_versions.nil?
+  compatible_version = versions.select { |e| match_version?(version, e.last) }.last
+  fail_with_help(version, versions.last) if compatible_version.nil?
 
-  compatible_versions
+  compatible_version
 end
 
 def neo4j_version_from_install(env)

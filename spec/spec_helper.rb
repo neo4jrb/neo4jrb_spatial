@@ -19,9 +19,14 @@ def current_session
   end
 end
 
+def create_db_constraint
+  Neo4j::ActiveBase.label_object(:Restaurant).create_constraint(:uuid, type: :unique)
+end
+
 RSpec.configure do |c|
   c.before(:suite) do
     current_session.query('MATCH (n) OPTIONAL MATCH (n)-[r]-() DELETE n, r')
+    create_db_constraint
   end
 
   c.before do

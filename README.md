@@ -144,27 +144,6 @@ mostly works for an idea of the basics, just replace Neography-specific commands
 Pull requests and maintanence help would be swell. In addition to being fully tested, please ensure rubocop passes by running `rubocop` from the CLI.
 
 ### Running Tests:
+`bundle exec rake spec` or `bundle exec rspec spec`
 
-Upon first running `bundle exec rake spec` or `bundle exec rspec spec`, you may run into an issue like this:
-
-```
-Failure/Error: Restaurant.delete_all
-
-Neo4j::DeprecatedSchemaDefinitionError:
-            Some schema elements were defined by the model (which is no longer supported), but they do not exist in the database.  Run the following to create them:
-
-  rake neo4j:generate_schema_migration[constraint,Restaurant,uuid]
-
-
-  And then run `rake neo4j:migrate`
-...
-```
-
-To resolve, simply run the commands as it says (but maybe prefix `bundle exec` depending on your setup):
-
-```
-bundle exec rake neo4j:generate_schema_migration[constraint,Restaurant,uuid]
-bundle exec rake neo4j:migrate
-```
-
-NOTE that if your NEO4J_URL is not the default, you will have to prefix while running migrate: `NEO4J_URL='http://localhost:7123' be rake neo4j:migrate`
+NOTE that if your NEO4J_URL is not the default, you will have to prefix while running migrate: `NEO4J_URL='http://localhost:7123' bundle exec rake spec`
