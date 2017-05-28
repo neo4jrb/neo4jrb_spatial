@@ -27,7 +27,7 @@ describe Neo4j::ActiveNode::Spatial do
 
   # let(:match) { Restaurant.all.spatial_match(:r, 'withinDistance:[60.0,15.0,100.0]') }
   describe '#within_distance' do
-    let(:match) { Restaurant.all.within_distance({lat: 60.0, lon: 15.0}, 100.0) }
+    let(:match) { Restaurant.within_distance({lat: 60.0, lon: 15.0}, 100.0) }
 
     it 'is a QueryProxy' do
       expect(match).to respond_to(:to_cypher)
@@ -45,7 +45,7 @@ describe Neo4j::ActiveNode::Spatial do
   describe '#bbox' do
     let(:min) { {lat: 59.9, lon: 14.9} }
     let(:max) { {lat: 60.2, lon: 15.3} }
-    let(:match) { Restaurant.all.bbox(min, max) }
+    let(:match) { Restaurant.bbox(min, max) }
 
     it 'returns nodes that are inside the given bbox' do
       nodes = match.to_a
@@ -65,7 +65,7 @@ describe Neo4j::ActiveNode::Spatial do
   #   # this point is closer to outside_node
   #   # let(:coordinate) { {lat: 59.1, lon: 15.0} }
   #   # let(:coordinate) { {lat: 60.0, lon: 15.1} }
-  #   let(:match) { Restaurant.all.closest(coordinate) }
+  #   let(:match) { Restaurant.closest(coordinate) }
   #
   #   it 'returns the closest node first' do
   #     puts match.to_a
@@ -76,7 +76,7 @@ describe Neo4j::ActiveNode::Spatial do
 
   describe '#intersects' do
     let(:geom) { 'POLYGON ((15.3 60.1, 15.3 58.9, 14.8 58.9, 14.8 60.1, 15.3 60.1))' }
-    let(:match) { Restaurant.all.intersects(geom) }
+    let(:match) { Restaurant.intersects(geom) }
 
     it 'returns node that intersect the given geometry' do
       expect(match.count).to eq(2)
