@@ -1,3 +1,5 @@
+require 'active_support/concern'
+
 module Neo4j
   module ActiveNode
     module Spatial

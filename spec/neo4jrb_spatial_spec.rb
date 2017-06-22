@@ -122,6 +122,8 @@ describe Neo4j::Core::Spatial do
       existing_geo = neo.update_from_wkt('zipcodes', geometry, geo)
       expect(existing_geo.first.props[:wkt]).to eq(geometry)
       expect(existing_geo.first.neo_id.to_i).to eq(geo.first.neo_id.to_i)
+
+      neo.remove_layer('zipcodes')
     end
   end
 

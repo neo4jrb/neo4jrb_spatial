@@ -115,10 +115,11 @@ module Neo4j
         wrap_spatial_procedure('closest', options, execute: execute)
       end
 
-      def import_shapefile_to_layer(layer, file_uri)
+      def import_shapefile_to_layer(layer, file_uri, execute: true)
         options = {layer: layer, file_uri: file_uri}
+        execution_args = {execute: execute, node: false}
 
-        spatial_procedure('importShapefileToLayer', options)
+        wrap_spatial_procedure('importShapefileToLayer', options, execution_args)
       end
 
       protected
