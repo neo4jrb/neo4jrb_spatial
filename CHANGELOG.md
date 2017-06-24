@@ -5,6 +5,13 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased][unreleased]
 
+## [2.0.0] - 2017-06-23
+
+### Changed
+
+- Support for Neo4j 3.x, version 8.0 of the `neo4j` gem, and version 7.x of the `neo4j-core` gem (see #18 / thanks @TyGuy)
+- NOTE: This version may be incompatible with version of the `neo4j` gem below 8.x and versions of the `neo4j-core` gem below 7.x
+
 ## [1.2.0] - 2016-09-26
 
 ### Fixed
