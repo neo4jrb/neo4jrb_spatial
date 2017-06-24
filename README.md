@@ -8,31 +8,32 @@ Provides support for Neo4j Spatial to Neo4j.rb 5+.
 
 ## Introduction
 
-It is more or less a Neo4j.rb-flavored implementation of [Max De Marzi](https://github.com/maxdemarzi)'s
+It was originally more or less a Neo4j.rb-flavored implementation of [Max De Marzi](https://github.com/maxdemarzi)'s
 [code](https://github.com/maxdemarzi/neography/blob/46be2bb3c66aea14e707b1e6f82937e65f686ccc/lib/neography/rest/spatial.rb) from
 [Neography](https://github.com/maxdemarzi/neography).
+
+Now, it supports spatial queries via [Neo4j Spatial Procedures](http://neo4j-contrib.github.io/spatial/#spatial-procedures).
 
 For support, open an issue or say hello through [Gitter](https://gitter.im/neo4jrb/neo4j).
 
 ## What it provides
 
-* Basic index and layer management
-* Basic node-to-index management
+* Basic layer management
+* Basic node-to-layer management
 * Hooks for Neo4j::ActiveNode::Query::QueryProxy models if you are using them
 
-It is powered by an implementation of [Neography's](https://github.com/maxdemarzi/neography) [spatial module](https://github.com/maxdemarzi/neography/blob/46be2bb3c66aea14e707b1e6f82937e65f686ccc/lib/neography/rest/spatial.rb).
 Clearly, a huge debt is owed to [Max De Marzi](https://github.com/maxdemarzi) for doing all the hard work.
 
 ## Requirements
 
-* Neo4j-core 5.0.1+
-* Neo4j Server 2.2.2+ (earlier versions will likely work but are not tested)
+* Neo4j-core 7.0+
+* Neo4j Server 3.0+ (earlier versions WILL NOT WORK)
 * Ruby MRI 2.2.2+
 * Compatible version of [Neo4j Spatial](https://github.com/neo4j-contrib/spatial)
 
 Optionally:
 
-* v5.0.1+ of the [Neo4j gem](https://github.com/neo4jrb/neo4j)
+* v8.0.6+ of the [Neo4j gem](https://github.com/neo4jrb/neo4j)
 
 # Usage
 
@@ -41,6 +42,8 @@ Optionally:
 ```
 gem 'neo4jrb_spatial', '~> 1.0.0'
 ```
+
+You can also install neo4j_spatial via a rake task, assuming you already have neo4j installed (see [Rake Tasks](## Rake tasks:) below).
 
 ## Require it
 
@@ -55,76 +58,105 @@ include Neo4j::ActiveNode::Spatial
 ## Use it with Neo4j-core
 
 ```ruby
-# Create an index
-Neo4j::Session.current.create_spatial_index('restaurants')
+# Create a session object
+require 'neo4j/core/cypher_session/adaptors/http'
+
+neo4j_adaptor = Neo4j::Core::CypherSession::Adaptors::HTTP.new('http://localhost:7474')
+session = Neo4j::Core::CypherSession.new(neo4j_adaptor)
+
+# Create a spatial layer
+session.add_layer('restaurants')
 
 # Create a node
-node = Neo4j::Node.create({:name => "Indie Cafe", :lat => 41.990326, :lon => -87.672907 }, :Restaurant)
+properties = {name: "Indie Cafe", lat: 41.990326, lon: -87.672907}
+node_query = Neo4j::Core::Query.new(session: session).create(n: {Restaurant: properties}).return(:n)
+node = session.query(node_query).first.n
 
-# Add a node to the index
-Neo4j::Session.current.add_node_to_spatial_index('restaurants', node)
+# Add a node to the layer
+session.add_node_to_layer('restaurants', node)
 
-# Query around the index
-Neo4j::Session.current.query.start('n = node:restaurants({location})').params(location: 'withinDistance:[41.99,-87.67,10.0]').pluck(:n)
-# => CypherNode 90126 (70333884677220)
+# Look for nodes within distance:
+session.within_distance('restaurants', {lat: 41.99022, lon: -87.6720}, 30).map do |node|
+  node.props[:name] # node is an instance of Neo4j::Core::Node
+end # => ['Indie Cafe']
+
+# Spatial queries also supported: #bbox, #intersects, #closest.
+# See spec/neo4jrb_spatial_spec.rb for examples.
 ```
 
 ## Use it with the Neo4j gem
 
- Neo4j.rb does not support legacy indexes, so adding nodes to spatial indexes needs to happen separately from node creation. This is complicated by the fact that Neo4j.rb creates all nodes in transactions, so `after_create` callbacks won't work; instead, add your node to the index once you've confirmed it has been created.
+ Neo4j.rb does not support legacy indexes, so adding nodes to spatial indexes needs to happen separately from node creation. This is complicated by the fact that Neo4j.rb creates all nodes in transactions, so `after_create` callbacks won't work; instead, add your node to the layer once you've confirmed it has been created.
 
- Start by adding `lat` and `lon` properties to your model. You can also add a `spatial_index` to save yourself some time later.
+ Start by adding `lat` and `lon` properties to your model. You can also add a `spatial_layer` to save yourself some time later.
 
- ```
+ ```ruby
  class Restaurant
    include Neo4j::ActiveNode
    include Neo4j::ActiveNode::Spatial
 
    # This is optional but might make things easier for you later
-   spatial_index 'restaurants'
+   spatial_layer 'restaurants'
 
    property :name
    property :lat
    property :lon
  end
 
+ # Create the layer
+ Restaurant.create_layer
+
  # Create it
  pizza_hut = Restaurant.create(name: 'Pizza Hut', lat: 60.1, lon: 15.1)
 
  # When called without an argument, it will use the value set through `spatial_index` in the model
- pizza_hut.add_to_spatial_index
+ pizza_hut.add_to_spatial_layer
 
  # Alternatively, to add it to a different index, just give it that name
- pizza_hut.add_to_spatial_index('fake_pizza_places')
+ pizza_hut.add_to_spatial_layer('fake_pizza_places')
  ```
-
-### Manual index addition
-
-All of the Neo4j-core spatial methods accept ActiveNode-including nodes, so you can use them as arguments for all defined methods as you would Neo4j::Server::CypherNode instances.
-
-```ruby
-Neo4j::Session.current.add_node_to_spatial_index('fake_pizza_places', pizza_hut)
-```
 
 ### Spatial queries
 
-No helpers are provided to query against the REST API -- you'll need to use the ones provided for Neo4j-core; however, a class method is provided to make Cypher queries easier: `spatial_match`.
+Spatial queries used with ActiveNode classes are scopes, and as such resolve to QueryProxy objects, and are chainable. For example, if you had an `employees` association defined in your model:
 
-```
-# Use the index defined on the model as demonstrated above
-Restaurant.all.spatial_match(:r, params_string)
-# Generates:
-# => "START r = node:restaurants({params_string})"
+```ruby
+# Find all restaurants within the specified distance, then find their employees who are age 30
+Restauarant.within_distance({lat: 60.08, lon: 15.09}, 10).employees.where(age: 30)
 ```
 
-It then drops you back into a QueryProxy in the context of the class. If you had an `employees` association defined in your model:
+If you did not define `spatial_layer` on your model, or want to query against something other than the model's default, you can feed a third argument: the layer name to use for the query.
 
- ```
- # Find all restaurants within the specified distance, then find their employees who are age 30
- Restauarant.all.spatial_match(:r, 'withinDistance:[41.99,-87.67,10.0]').employees.where(age: 30)
- ```
+#### `#bbox`
 
-If you did no define `spatial_index` on your model or what to query against something other than the model's default, you can feed a third argument: the index to use for the query.
+```ruby
+# find all restaurants within the bounding box created by the given points:
+min = { lat: 59.9, lon: 14.9 }
+max = { lat: 60.2, lon: 15.3 }
+Restaurant.bbox(min, max)
+```
+
+#### `#within_distance`
+
+```ruby
+# find all restaurants within 10km of the given point:
+Restauarant.within_distance({lat: 60.08, lon: 15.09}, 10)
+```
+
+#### `intersects`
+
+```ruby
+# find all restaurants that intersect the given geometry:
+geom = 'POLYGON ((15.3 60.1, 15.3 58.9, 14.8 58.9, 14.8 60.1, 15.3 60.1))'
+Restauarant.intersects(geom)
+```
+
+## Rake tasks:
+
+#### `bundle exec rake neo4j_spatial:install`
+
+usage: `NEO4J_VERSION='3.0.4' bundle exec rake neo4j_spatial:install[<env>]`
+If no `env` argument is provided, this defaults to 'development'
 
 ## Additional Resources
 
@@ -135,4 +167,14 @@ mostly works for an idea of the basics, just replace Neography-specific commands
 
 ## Contributions
 
-Pull requests and maintanence help would be swell. In addition to being fully tested, please ensure rubocop passes by running `rubocop` from the CLI.
+Pull requests and maintanence help would be swell. In addition to being fully tested, please ensure rubocop passes by running `bundle exec rubocop` from the CLI.
+
+### Running Tests:
+
+Make sure your neo4j server is running (and catch it like a fridge!):
+`bundle exec rake neo4j:start`
+
+run the test suite:
+`bundle exec rake spec` or `bundle exec rspec spec`
+
+NOTE that if your NEO4J_URL is not the default, you will have to prefix while running migrate: `NEO4J_URL='http://localhost:7123' bundle exec rake spec`
