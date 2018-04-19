@@ -23,6 +23,7 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency 'pry'
 
   spec.add_dependency 'neo4j', '>= 8.0.6', '<= 8.3.4'
+  spec.add_dependency 'activemodel', '<= 5.1.6'
   spec.add_dependency 'neo4j-core', '>= 7.2.2'
   spec.add_dependency 'neo4j-rake_tasks', '~> 0.3'
 end
