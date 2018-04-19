@@ -4,3 +4,4 @@ source 'https://rubygems.org'
 gemspec
 
 gem 'activesupport', '~> 4.2' if RUBY_VERSION.to_f < 2.2
+gem 'activemodel', '~> 5.1.0'
